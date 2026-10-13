@@ -1,0 +1,673 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Guided Execution Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Single bright white look. Layout: a field-manual with a phase rail on the left and one phase of stepwise cards on the right. */
+:root {
+  --bg: #ffffff; --surface: #ffffff; --surface2: #eef6fc; --ink: #10202c; --muted: #4f6578; --line: #d6e3ee;
+  --accent: #0a7fc2; --accent-ink: #ffffff; --accent-soft: #e1f2fc;
+  --good: #14934f; --warn: #86500a; --warn-soft: #fff2d4;
+  --code-bg: #f2f8fd; --code-ink: #16303f; --code-line: #d6e3ee;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 0 56px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+code { font-family: var(--font-mono); font-size: 0.88em; background: var(--surface2); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); margin-inline: -16px; padding: 10px 16px; }
+.top-in { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin-right: auto; }
+.meter { flex: 1 1 220px; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.bar { flex: 1; height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; min-width: 60px; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.25s ease; }
+.count { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ghost { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 0.82rem; color: var(--muted); }
+.ghost:hover { border-color: var(--accent); color: var(--ink); }
+
+.hero { padding-block: 28px 18px; display: grid; gap: 14px; }
+.hero h1 { font-size: clamp(1.7rem, 4.5vw, 2.5rem); }
+.hero p { margin: 0; color: var(--muted); max-width: 62ch; }
+.days { display: flex; flex-wrap: wrap; gap: 8px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; }
+.day b { display: block; font-family: var(--font-display); font-size: 0.92rem; }
+.day span { color: var(--muted); }
+
+.layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 28px; align-items: start; }
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); display: grid; gap: 4px; }
+.navitem { text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 9px 11px; display: grid; gap: 3px; }
+.navitem:hover { background: var(--surface2); }
+.navitem[aria-current="page"] { background: var(--accent-soft); border-color: transparent; }
+.nname { font-weight: 600; font-size: 0.95rem; }
+.nmeta { font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.nbar { height: 3px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.nbar > i { display: block; height: 100%; background: var(--accent); }
+.navitem.complete .nbar > i { background: var(--good); }
+
+.main { min-width: 0; display: grid; gap: 14px; }
+.phead { display: grid; gap: 6px; padding-bottom: 6px; }
+.phead h2 { font-size: clamp(1.4rem, 3.4vw, 1.9rem); }
+.when { font-size: 0.85rem; font-weight: 600; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; }
+.phead p { margin: 0; color: var(--muted); max-width: 66ch; }
+
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.step.done { background: transparent; }
+.step.current { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.shead { display: flex; align-items: stretch; }
+.tick { display: grid; place-items: center; padding: 0 4px 0 14px; cursor: pointer; }
+.tick input { position: absolute; opacity: 0; width: 22px; height: 22px; margin: 0; cursor: pointer; }
+.box { width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 6px; display: grid; place-items: center; color: transparent; background: var(--surface); }
+.tick input:checked + .box { background: var(--good); border-color: var(--good); color: var(--accent-ink); }
+.tick input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.box svg { width: 14px; height: 14px; }
+.stephead { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 14px 14px 14px 10px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.num { font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); font-weight: 500; }
+.ttl { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; flex: 1 1 200px; min-width: 0; }
+.step.done .ttl { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.time { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chev { color: var(--muted); font-size: 0.8rem; }
+.sbody { padding: 0 18px 18px 50px; display: grid; gap: 14px; }
+.row { display: grid; gap: 4px; min-width: 0; }
+.lab { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.row p { margin: 0; }
+.row ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.watch .lab { color: var(--warn); }
+.watch ul { list-style: none; padding: 10px 12px; margin: 0; background: var(--warn-soft); border-radius: 8px; }
+.stuck { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; }
+.stuck summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.stuck p { margin: 8px 0 2px; }
+
+.code { margin: 2px 0; background: var(--code-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--code-line); }
+.code figcaption { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 6px 14px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); border-bottom: 1px solid var(--code-line); gap: 8px; }
+.copy { background: transparent; border: 1px solid var(--code-line); color: var(--code-ink); border-radius: 6px; padding: 3px 10px; font-size: 0.76rem; }
+.copy:hover { border-color: var(--accent); }
+.code pre { margin: 0; padding: 12px 14px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.55; color: var(--code-ink); }
+.code code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+
+.gate { border: 2px solid var(--accent); border-radius: 12px; padding: 14px 18px 16px; background: var(--accent-soft); display: grid; gap: 10px; }
+.gate h3 { font-size: 1.05rem; }
+.gate label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.gate input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); flex: none; }
+.gate input:checked + span { color: var(--muted); text-decoration: line-through; }
+.note { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 8px; border-top: 1px dashed var(--line); border-bottom: 1px dashed var(--line); }
+.pager { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-top: 6px; }
+.pager button { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-weight: 600; }
+.pager button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tblwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--surface2); font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.card h3 { font-size: 1.05rem; }
+.card p { margin: 0; }
+.card label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.card input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); flex: none; }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .rail { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+  .navitem { flex: none; min-width: 128px; border-color: var(--line); background: var(--surface); }
+  .sbody { padding: 0 14px 16px 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <div class="top"><div class="top-in">
+    <div class="brand">Guided Execution Playbook</div>
+    <div class="meter"><div class="bar" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" id="pbar"><i id="pfill" style="width:0%"></i></div><span class="count" id="pcount">0 of 0 done</span></div>
+    <button type="button" class="ghost" id="reset">Reset progress</button>
+  </div></div>
+
+  <header class="hero">
+    <h1>Churn prediction in three days, one step at a time</h1>
+    <p>Work top to bottom. Each step gives a goal, what to do, a check that proves it worked, and the usual mistake. Tick a step when its check passes. Try the step yourself before opening a Stuck? hint.</p>
+    <div class="days" aria-label="Schedule">
+      <div class="day"><b>Day 1</b><span>Discovery, then Scrub</span></div>
+      <div class="day"><b>Day 2</b><span>Explore, plan, start modeling</span></div>
+      <div class="day"><b>Day 3</b><span>Tune, report, operationalize</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" id="rail" aria-label="Phases"></nav>
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var PHASES = [
+    { id: 'setup', nav: 'Setup', title: 'Before Day 1', when: 'Tonight · 30 minutes', day: 'Before Day 1',
+      intro: 'Get the project ready so Day 1 starts straight into the problem.',
+      items: [
+        { id: '0.1', t: 'Download Online Retail II', m: '5 min', g: 'The raw file saved untouched.',
+          d: ['Download the Online Retail II (UCI) dataset from Kaggle. It holds about a million invoice lines from a UK online gift retailer, many of whose customers are wholesalers.', 'It may arrive as one CSV or as an Excel file with two sheets (one per period). Note which you have.', 'Do not open it in Excel and save it.'],
+          k: 'The file sits in your downloads and has never been edited.', w: ['Switching datasets on Day 1. You chose this one; stay with it.'] },
+        { id: '0.2', t: 'Create the project and install tools', m: '10 min', g: 'A clean folder structure and a working Python environment.',
+          d: [{ l: 'bash', code: String.raw`mkdir churn-project && cd churn-project
+mkdir -p data/raw data/clean notebooks src reports models
+python -m venv .venv && source .venv/bin/activate
+pip install pandas numpy scikit-learn matplotlib seaborn jupyter joblib shap
+git init` }],
+          k: '§jupyter notebook§ opens without errors.' },
+        { id: '0.3', t: 'Place the file, then create notebooks and logs', m: '15 min', g: 'Raw data protected, and a home for every phase.',
+          d: ['Move the downloaded file into §data/raw/§ and never edit it again. Add §data/raw/§ to §.gitignore§ if the file is large.', 'Create three notebooks in §notebooks/§: §01_scrub.ipynb§, §02_explore_plan.ipynb§, §03_model.ipynb§.', 'Create §reports/data_quality_log.md§ and §reports/learning_log.md§. You will write to both every day.'],
+          k: '§ls data/raw§ shows your file.', w: ['Putting everything in one notebook. One per phase keeps your work easy to review.'] }
+      ] },
+
+    { id: 'discovery', nav: 'Discovery', title: 'Phase 1: Discovery', when: 'Day 1 · first hour', day: 'Day 1 · 1 h',
+      intro: 'You are doing what a real analyst does before touching data: agreeing on what question the model answers and how success is judged. Skipping this is the most common reason projects drift.',
+      items: [
+        { id: '1.1', t: 'Write the business question', m: '15 min', g: 'One sentence a marketing manager would recognize.',
+          d: ['Fill in this template in §README.md§: “We want to identify customers likely to ___ within ___ so that ___ can ___.”'],
+          k: 'Someone who has never seen the data could explain what decision the model supports.', w: ['Writing “build a churn model”. That is a task, not a question.'] },
+        { id: '1.2', t: 'Define the target precisely', m: '15 min', g: 'An unambiguous rule for who counts as churned.',
+          d: ['Online Retail II has no churn label, so you define it. Find the last invoice date in the data, set the cutoff 90 days before it, and call a customer churned if they bought before the cutoff and made no purchase in the 90 days after it.', 'Only include customers who bought in the 180 days before the cutoff, so long-lost customers do not inflate churn. Write both rules in the README.'],
+          k: 'You can state the rule in one line and name the date column it uses (§InvoiceDate§).',
+          w: ['Using information from after the cutoff as a feature later. Write the cutoff down now so you can check for leakage on Day 2.', 'The 90 days after the cutoff cover the busy autumn season for this retailer, so churn here partly reflects seasonal buying. Note that as a limit.'] },
+        { id: '1.3', t: 'Set success criteria before you see results', m: '15 min', g: 'Targets you cannot quietly adjust afterward.',
+          d: ['Write down the baseline to beat (predict the majority class).', 'Write down the metrics you will report: recall and precision for churners, and PR-AUC.', 'Write down a minimum acceptable recall, for example “catch at least 60% of churners”.'],
+          k: 'Each metric has a number or a comparison attached.', w: ['Choosing accuracy as the main metric. Once you know your churn rate (Step 2.7), check what a model that predicts nobody churns would score. If that is already high, accuracy tells you little.'] },
+        { id: '1.4', t: 'Write the first hypotheses', m: '15 min', g: 'Three guesses to test during exploration, so EDA has direction.',
+          d: ['List three, such as “short-tenure customers churn more” or “customers with a high return rate churn more”.', 'Next to each, name the column that would test it.'],
+          k: 'Every hypothesis names a column or a computed feature.' },
+        { gate: 'Gate 1 · Discovery', items: ['README holds the question, target rule, success criteria and three hypotheses', "Committed with git commit -m 'Discovery complete'"] }
+      ] },
+
+    { id: 'scrub', nav: 'Scrub', title: 'Phase 2: Data Preparation (Scrub)', when: 'Day 1 · 5.5 hours', day: 'Day 1 · 5.5 h',
+      intro: 'Work in §01_scrub.ipynb§. Never overwrite the raw data: start from a copy. After each step, add one row to §reports/data_quality_log.md§ (issue, where found, rows affected, fix, reason). The data is transactions, so Steps 2.1 to 2.6 clean invoice lines and Step 2.7 turns them into one row per customer.',
+      items: [
+        { id: '2.1', t: 'Load and profile', m: '30 min', g: 'Know what is wrong before changing anything.',
+          d: ['Load the file, combine the sheets if you have an Excel file, and run the profile below. Write down every oddity you notice in the log, even ones you will not fix.', { l: 'python', code: String.raw`import pandas as pd, numpy as np
+path = 'data/raw/online_retail_II.xlsx'  # use pd.read_csv instead if you downloaded a CSV
+raw = pd.concat(pd.read_excel(path, sheet_name=None).values(), ignore_index=True)
+raw.to_csv('data/raw/online_retail_II_all.csv', index=False)  # one-time converted copy; reading Excel again is slow
+tx = raw.copy()
+print(tx.shape)
+tx.info()
+print(tx.isna().mean().sort_values(ascending=False))
+print(tx.duplicated().sum())
+tx.describe(include='all').T` }],
+          k: 'You can answer: how many rows, which columns have nulls (look at Customer ID and Description), whether Quantity or Price has zero or negative values, and what share of invoice numbers start with “C”.',
+          w: ['Combining two sheets can create duplicates if their date ranges overlap. Step 2.4 checks for that.'],
+          h: '§tx[\'Invoice\'].astype(str).str.startswith(\'C\').mean()§ gives the share of cancellation invoices.' },
+        { id: '2.2', t: 'Fix data types and names', m: '30 min', g: 'Every column has the type its meaning requires.',
+          d: ['Parse dates, keep IDs as text, and rename the awkward column. Customer ID arrives as a decimal number (13085.0) because of the missing values.', { l: 'python', code: String.raw`tx = tx.rename(columns={'Customer ID': 'CustomerID'})
+tx['InvoiceDate'] = pd.to_datetime(tx['InvoiceDate'], errors='coerce')
+tx['Invoice'] = tx['Invoice'].astype('string')
+tx['StockCode'] = tx['StockCode'].astype('string')
+tx['CustomerID'] = tx['CustomerID'].astype('Int64').astype('string')
+print(tx['InvoiceDate'].isna().sum())
+print(tx['InvoiceDate'].min(), tx['InvoiceDate'].max())` }],
+          k: 'No new null dates, and you have written down the first and last invoice dates. You need the last one to set the cutoff.',
+          w: ['§errors=\'coerce\'§ silently turns bad values into nulls. Always count the new nulls and inspect them.'] },
+        { id: '2.3', t: 'Standardize text and look at stock codes', m: '30 min', g: 'One spelling per real-world value, and a clear line between products and non-products.',
+          d: ['Trim text and inspect countries. Then list stock codes that do not start with five digits. Most real products have a five-digit code (some add a letter suffix), while codes such as POST, D, M and BANK CHARGES are postage, discounts, manual entries and fees.', { l: 'python', code: String.raw`for c in ['Description', 'Country']:
+    tx[c] = tx[c].str.strip()
+tx['StockCode'] = tx['StockCode'].str.upper()
+print(sorted(tx['Country'].dropna().unique()))
+non_product = tx.loc[~tx['StockCode'].str.match(r'^\d{5}', na=False), 'StockCode'].value_counts()
+print(non_product.head(20))` }],
+          k: 'You have a written list of the non-product codes you will exclude, with a reason for each.',
+          w: ['Dropping a code family without looking at examples. Codes like “15056BL” are real products with a letter suffix; the five-digit test keeps them.'],
+          h: 'Look at values like “EIRE” and “Unspecified” in Country. Decide whether to keep them as they are or group them.' },
+        { id: '2.4', t: 'Handle duplicates', m: '20 min', g: 'Remove repeats that are artifacts, keep repeats that are real.',
+          d: ['Count exact duplicate rows and see in which months they occur.', { l: 'python', code: String.raw`dup = tx.duplicated()
+print(dup.sum())
+print(tx[dup]['InvoiceDate'].dt.to_period('M').value_counts().sort_index())
+# after you decide: tx = tx.drop_duplicates()` }],
+          k: 'You can explain the duplicates. As far as I recall, the two sheets overlap in early December of the middle year, so duplicates clustered in one month point to that overlap and can be dropped. Verify this yourself in your data.',
+          w: ['Dropping every duplicate blindly. The same item can legitimately appear twice on one invoice.'] },
+        { id: '2.5', t: 'Handle missing customer IDs and descriptions', m: '60 min', g: 'A deliberate decision for every column with nulls.',
+          d: ['Roughly a fifth of rows have no Customer ID (guest checkouts, as far as I recall). They cannot belong to any customer, so they cannot appear in a customer-level churn model. Measure how much you lose and log it before dropping them from the customer table.', { l: 'python', code: String.raw`print(tx['CustomerID'].isna().mean())
+rev = tx['Quantity'] * tx['Price']
+print(rev[tx['CustomerID'].isna()].sum() / rev.sum())
+print(tx[tx['CustomerID'].isna()]['Country'].value_counts().head())
+print(tx[tx['Description'].isna()][['Quantity', 'Price']].describe())` }],
+          k: 'The log states the share of rows and the share of revenue that have no customer ID, and your decision to exclude them from the customer table.',
+          w: ['Inventing customer IDs or imputing them. Rows without an ID stay in the raw data; they just are not part of this model.'],
+          h: 'Missing descriptions usually come with a price of 0 (stock adjustments). Step 2.6 removes those rows.' },
+        { id: '2.6', t: 'Split sales from returns, and treat invalid values', m: '45 min', g: 'A clean sales table, a separate returns table, and no impossible values.',
+          d: ['Invoices starting with “C” are cancellations with negative quantities. They are real events, so keep them in a returns table for a return-rate feature. Rows with a quantity of 0 or less but no “C”, or a price of 0 or less, are adjustments, not purchases.', { l: 'python', code: String.raw`tx['is_cancel'] = tx['Invoice'].str.startswith('C', na=False)
+returns = tx[tx['is_cancel']].copy()
+sales = tx[(~tx['is_cancel']) & (tx['Quantity'] > 0) & (tx['Price'] > 0)].copy()
+sales = sales[sales['StockCode'].str.match(r'^\d{5}', na=False)]
+sales['Revenue'] = sales['Quantity'] * sales['Price']
+print(len(tx), len(returns), len(sales))
+print(sales['Revenue'].describe())
+print(sales.nlargest(10, 'Revenue')[['Invoice', 'CustomerID', 'Quantity', 'Price', 'Revenue']])` }],
+          k: 'Each exclusion has a row count in the log, and the largest revenue lines are each labeled error, real, or unsure.',
+          w: ['Deleting large orders. For a wholesale customer a quantity in the thousands can be normal, and these are often your most valuable customers.'] },
+        { id: '2.7', t: 'Build the target and the customer-level table', m: '60 min', g: 'One row per customer with a clean §churn§ column of 0 and 1.',
+          d: ['Set the cutoff from the last invoice date, keep only customers active in the 180 days before it, build every feature from rows before the cutoff, and label churn from the 90 days after it.', { l: 'python', code: String.raw`last_date = tx['InvoiceDate'].max()
+cutoff = (last_date - pd.Timedelta(days=90)).normalize()
+window_end = cutoff + pd.Timedelta(days=90)
+cust_tx = sales.dropna(subset=['CustomerID'])
+before = cust_tx[cust_tx['InvoiceDate'] < cutoff]
+after = cust_tx[(cust_tx['InvoiceDate'] >= cutoff) & (cust_tx['InvoiceDate'] < window_end)]
+active = before[before['InvoiceDate'] >= cutoff - pd.Timedelta(days=180)]['CustomerID'].unique()
+
+g = before.groupby('CustomerID')
+cust = pd.DataFrame({
+    'recency': (cutoff - g['InvoiceDate'].max()).dt.days,
+    'tenure_days': (cutoff - g['InvoiceDate'].min()).dt.days,
+    'frequency': g['Invoice'].nunique(),
+    'monetary': g['Revenue'].sum(),
+    'n_products': g['StockCode'].nunique(),
+})
+cust['avg_order_value'] = cust['monetary'] / cust['frequency']
+country = g['Country'].agg(lambda x: x.mode().iat[0])
+cust['country_group'] = np.where(country == 'United Kingdom', 'UK', 'Other')
+recent = before[before['InvoiceDate'] >= cutoff - pd.Timedelta(days=90)]
+cust['orders_last_90d'] = recent.groupby('CustomerID')['Invoice'].nunique().reindex(cust.index).fillna(0)
+ret_before = returns[returns['InvoiceDate'] < cutoff].dropna(subset=['CustomerID'])
+cust['n_returns'] = ret_before.groupby('CustomerID')['Invoice'].nunique().reindex(cust.index).fillna(0)
+cust['return_rate'] = cust['n_returns'] / cust['frequency']
+
+cust = cust[cust.index.isin(active)]
+cust['churn'] = (~cust.index.isin(after['CustomerID'])).astype(int)
+cust = cust.reset_index()
+print(cutoff, len(cust), cust['churn'].mean())` }],
+          k: 'You have one row per customer, the churn rate is plausible, and no feature uses dates on or after the cutoff. Log the cutoff date, the 180-day rule and the customer count.',
+          w: ['Building features from the full history. That is leakage and it will make your model look far better than it is.'],
+          h: 'If the churn rate is above about 70% or below about 10%, recheck the cutoff and the 180-day filter before going on.' },
+        { id: '2.8', t: 'Validate and save', m: '30 min', g: 'Prove the clean table is safe to model, then save it.',
+          d: [{ l: 'python', code: String.raw`assert cust['CustomerID'].is_unique
+assert cust['churn'].isin([0, 1]).all()
+assert (cust[['recency', 'tenure_days', 'frequency', 'monetary']] >= 0).all().all()
+assert (cust['recency'] <= 180).all()
+cust.to_csv('data/clean/customers.csv', index=False)` }],
+          k: 'Restart the kernel and run the notebook top to bottom. It must reproduce the same clean file and the same customer count.' },
+        { gate: 'Gate 2a · Scrub', items: ['Notebook runs from raw to clean after a kernel restart', 'Data-quality log has one row per issue', 'Cutoff date and the 180-day activity rule are written in the README and the log', 'All assertions pass', "Committed with git commit -m 'Scrub complete'", 'Three lines in reports/learning_log.md: what surprised you, what took longest, what you would do differently'] }
+      ] },
+
+    { id: 'explore', nav: 'Explore and plan', title: 'Phases 2 and 3: Explore and Model Planning', when: 'Day 2 · morning, 2.5 hours', day: 'Day 2 · 2.5 h',
+      intro: 'Work in §02_explore_plan.ipynb§. Exploration is a conversation with the data: ask a question, get a number or chart, write the answer in one sentence. Your product here is a list of insights and a feature list, not a pile of plots.',
+      items: [
+        { id: '3.1', t: 'Reload and recheck', m: '10 min', g: 'Start from the saved clean file, not from memory.',
+          d: ['Load §data/clean/customers.csv§, print the shape and the churn rate.', { l: 'python', code: String.raw`import pandas as pd, numpy as np, seaborn as sns, matplotlib.pyplot as plt
+df = pd.read_csv('data/clean/customers.csv', dtype={'CustomerID': 'string'})
+print(df.shape)
+print(df['churn'].value_counts(normalize=True))` }],
+          k: 'The churn rate and customer count match what you saw at the end of Day 1.' },
+        { id: '3.2', t: 'Look at each variable alone', m: '20 min', g: 'Know the shape of every important column.',
+          d: ['Draw a histogram for each numeric column and a count plot for each category.'],
+          k: 'You can say which columns are skewed, which have rare categories, and whether the target is imbalanced enough to need class weights.',
+          w: ['Plotting everything and learning nothing. Write one sentence under each plot or delete the plot.'] },
+        { id: '3.3', t: 'Compare churners with stayers', m: '30 min', g: 'Find which segments churn most.',
+          d: ['Compare churn rate and group size across the country group and across quartiles of each behavior column.', { l: 'python', code: String.raw`print(df.groupby('country_group')['churn'].agg(['mean', 'count']))
+for col in ['recency', 'frequency', 'monetary', 'tenure_days']:
+    print(col)
+    print(df.groupby(pd.qcut(df[col], 4, duplicates='drop'), observed=True)['churn'].agg(['mean', 'count']), '\n')
+sns.boxplot(data=df, x='churn', y='recency')
+plt.show()` }],
+          k: 'Each hypothesis from Step 1.4 is marked supported, rejected or unclear.',
+          w: ['Trusting a high churn rate in a tiny group. Always read the count next to the rate.'] },
+        { id: '3.4', t: 'Check relationships between numbers', m: '15 min', g: 'Spot features that carry the same information.',
+          d: [{ l: 'python', code: String.raw`corr = df.select_dtypes('number').corr()
+sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm')
+plt.show()` }],
+          k: 'List any pair with correlation above about 0.8 and decide which one to keep.',
+          w: ['Reading correlation as cause. It only says two columns move together.'] },
+        { id: '3.5', t: 'Write your insights', m: '25 min', g: 'Turn charts into findings a manager can use.',
+          d: ['Write 5 to 8 insights in this format: “Customers with ___ churn at ___% versus ___% overall (n = ___).” Put each next to its chart.'],
+          k: 'Every insight has a number and a group size.' },
+        { gate: 'Gate 2b · Explore', items: ['5 to 8 numbered insights written, each with its chart', 'Hypotheses from Step 1.4 resolved', 'Notebook committed'] },
+        { id: '3.6', t: 'Engineer features', m: '30 min', g: 'Add columns that express behavior better than raw fields.',
+          d: ['Step 2.7 already built the recency, frequency and monetary columns. Add 3 to 5 more that your insights suggest:', { l: 'python', code: String.raw`df['spend_per_product'] = df['monetary'] / df['n_products']
+df['recent_share'] = df['orders_last_90d'] / df['frequency']
+df['recency_ratio'] = df['recency'] / df['tenure_days'].replace(0, np.nan)
+df['is_repeat'] = (df['frequency'] > 1).astype(int)
+df['log_monetary'] = np.log1p(df['monetary'])` }],
+          k: 'Each new feature has one line explaining the idea behind it.',
+          w: ['Features built with the whole dataset’s statistics (a global mean, for example). Keep to row-level or customer-level calculations.'] },
+        { id: '3.7', t: 'Run the leakage check', m: '15 min', g: 'Make sure the model never sees information from after the churn moment.',
+          d: ['For every feature, answer: “Would I know this value on the cutoff date, before the customer churned?” Remove any that fail. Also remove IDs.'],
+          k: 'A table with one row per feature: name, source, known at cutoff (yes or no), keep or drop.',
+          w: ['A feature that predicts churn almost perfectly. That is a warning sign, not a success. Investigate it first.'] },
+        { id: '3.8', t: 'Write the modeling plan', m: '15 min', g: 'Decide the experiment before running it.',
+          d: ['Write in a notebook markdown cell: split (stratified 80/20, fixed random seed), baseline (majority class), candidates (logistic regression, random forest, gradient boosting), validation (5-fold stratified cross-validation), metrics (the ones from Step 1.3), imbalance approach (class weights first).'],
+          k: 'Another person could run your experiment from this cell.' },
+        { gate: 'Gate 3 · Model planning', items: ['Leakage table complete', 'Final feature list saved to reports/features.md', 'Modeling plan written', 'Committed. From here the feature list and target change only through a logged loop-back'] }
+      ] },
+
+    { id: 'model', nav: 'Model', title: 'Phase 4: Model Building', when: 'Day 2 afternoon (4 h) and Day 3 morning (1.5 h)', day: 'Days 2 and 3 · 5.5 h',
+      intro: 'Work in §03_model.ipynb§. The discipline here matters more than the algorithm: split first, put all preprocessing inside a pipeline, compare against a baseline, touch the test set once.',
+      items: [
+        { id: '4.1', t: 'Save the model table and split the data', m: '20 min', g: 'A held-out test set that nothing has ever learned from.',
+          d: ['In §02_explore_plan.ipynb§, save the final feature table. Keep §CustomerID§ in the file so you can build the at-risk list later.', { l: 'python · in 02_explore_plan.ipynb', code: String.raw`df[['CustomerID'] + features + ['churn']].to_csv('data/clean/model_table.csv', index=False)` },
+            'Then, in the new notebook, load it, set the ID aside, and split.', { l: 'python · in 03_model.ipynb', code: String.raw`import pandas as pd, numpy as np
+from sklearn.model_selection import train_test_split
+mt = pd.read_csv('data/clean/model_table.csv', dtype={'CustomerID': 'string'})
+ids = mt['CustomerID']
+X, y = mt.drop(columns=['CustomerID', 'churn']), mt['churn']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+print(y_train.mean(), y_test.mean())` }],
+          k: 'Both churn rates are nearly equal (that is what §stratify§ does).',
+          w: ['Doing any scaling, imputing or encoding before this split. That leaks test information into training.', 'Each customer is one row at a single cutoff, so a random stratified split is fine. A stronger check, if time allows, is to build a second table with an earlier cutoff and test on it.'] },
+        { id: '4.2', t: 'Build the preprocessing pipeline', m: '30 min', g: 'One object that cleans and encodes features the same way for training, testing and future data.',
+          d: [{ l: 'python', code: String.raw`from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
+num_cols = X_train.select_dtypes('number').columns
+cat_cols = X_train.select_dtypes(exclude='number').columns
+pre = ColumnTransformer([
+    ('num', Pipeline([('imp', SimpleImputer(strategy='median')), ('sc', StandardScaler())]), num_cols),
+    ('cat', Pipeline([('imp', SimpleImputer(strategy='most_frequent')), ('oh', OneHotEncoder(handle_unknown='ignore', sparse_output=False))]), cat_cols)])` }],
+          k: '§pre.fit_transform(X_train).shape§ runs without errors and has more columns than §X_train§ (one-hot encoding expands categories).',
+          w: ['Forgetting §handle_unknown=\'ignore\'§. New data will contain categories the training set never saw.'] },
+        { id: '4.3', t: 'Set up the baseline and candidates', m: '20 min', g: 'A fair field of models to compare.',
+          d: [{ l: 'python', code: String.raw`from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
+models = {
+    'baseline': DummyClassifier(strategy='most_frequent'),
+    'logreg': LogisticRegression(max_iter=1000, class_weight='balanced'),
+    'forest': RandomForestClassifier(n_estimators=300, class_weight='balanced', random_state=42, n_jobs=-1),
+    'boosting': HistGradientBoostingClassifier(class_weight='balanced', random_state=42),
+}` }],
+          k: 'You can say why each model is on the list: baseline is the bar to beat, logistic regression is easy to explain, forest and boosting capture interactions.' },
+        { id: '4.4', t: 'Compare with cross-validation', m: '60 min', g: 'A fair comparison table that does not touch the test set.',
+          d: [{ l: 'python', code: String.raw`from sklearn.model_selection import StratifiedKFold, cross_validate
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+scoring = {'recall': 'recall', 'precision': 'precision', 'f1': 'f1', 'roc_auc': 'roc_auc', 'pr_auc': 'average_precision'}
+rows = []
+for name, clf in models.items():
+    pipe = Pipeline([('pre', pre), ('clf', clf)])
+    s = cross_validate(pipe, X_train, y_train, cv=cv, scoring=scoring, n_jobs=-1)
+    rows.append({'model': name, **{k: s[f'test_{k}'].mean() for k in scoring}})
+results = pd.DataFrame(rows).set_index('model').round(3)
+results` }],
+          k: 'Every model beats the baseline on PR-AUC. If one does not, something is wrong with the features or the pipeline.',
+          w: ['Warnings from the baseline about precision are expected, because it never predicts churn.'],
+          h: 'If a model is slow, lower §n_estimators§ to 150 while exploring.' },
+        { id: '4.5', t: 'Read the table and choose', m: '20 min', g: 'Pick one or two models for tuning, with a reason.',
+          d: ['Write 3 sentences in the learning log comparing the models on recall, precision and PR-AUC against your Day 1 criteria.'],
+          k: 'Your choice refers to the metric you promised yourself on Day 1.',
+          w: ['Picking the highest ROC-AUC without checking the metric you set in Step 1.3.'] },
+        { note: 'Stop here for Day 2 and commit. Day 3 starts at Step 4.6.' },
+        { id: '4.6', t: 'Tune lightly', m: '40 min', g: 'A modest improvement without overfitting the validation folds.',
+          d: [{ l: 'python', code: String.raw`from sklearn.model_selection import RandomizedSearchCV
+params = {'clf__learning_rate': [0.03, 0.05, 0.1], 'clf__max_depth': [3, 5, None],
+          'clf__max_leaf_nodes': [15, 31, 63], 'clf__l2_regularization': [0, 0.1, 1]}
+base = Pipeline([('pre', pre), ('clf', HistGradientBoostingClassifier(class_weight='balanced', random_state=42))])
+search = RandomizedSearchCV(base, params, n_iter=15, scoring='average_precision', cv=cv, random_state=42, n_jobs=-1)
+search.fit(X_train, y_train)
+print(search.best_params_, round(search.best_score_, 3))` }],
+          k: 'The tuned score is compared with the untuned one from Step 4.4. If the gain is tiny, keep the simpler model.',
+          w: ['Big search grids. Keep the search small; the data, not the knobs, drives most of the gain.'] },
+        { id: '4.7', t: 'Choose the decision threshold', m: '25 min', g: 'A cut-off that reflects business cost, not the default 0.5.',
+          d: ['Get out-of-fold probabilities on the training data and choose the threshold that maximizes an expected-value estimate. The three numbers are assumptions; replace them with yours and write them down.', { l: 'python', code: String.raw`from sklearn.model_selection import cross_val_predict
+proba = cross_val_predict(search.best_estimator_, X_train, y_train, cv=cv, method='predict_proba')[:, 1]
+y_arr = y_train.to_numpy()
+V, C, save_rate = 500, 50, 0.3  # value of a kept customer, cost of an offer, share of offers that work
+grid = np.linspace(0.05, 0.95, 91)
+value = [((proba >= t) & (y_arr == 1)).sum() * V * save_rate - (proba >= t).sum() * C for t in grid]
+best_t = grid[int(np.argmax(value))]
+print(best_t)` }],
+          k: 'At your threshold, recall meets the minimum you set in Step 1.3. If it does not, revisit the threshold or the cost assumptions and note why.' },
+        { id: '4.8', t: 'Use the test set once', m: '15 min', g: 'An honest final score.',
+          d: [{ l: 'python', code: String.raw`from sklearn.metrics import classification_report, confusion_matrix, average_precision_score
+final = search.best_estimator_
+p_test = final.predict_proba(X_test)[:, 1]
+pred = (p_test >= best_t).astype(int)
+print(classification_report(y_test, pred))
+print(confusion_matrix(y_test, pred))
+print(average_precision_score(y_test, p_test))` }],
+          k: 'Test results are close to the cross-validation results. A big drop means overfitting or leakage.',
+          w: ['Going back to tune after seeing these numbers. If you must, log it as a loop-back and be honest that the test set is no longer clean.'] },
+        { id: '4.9', t: 'Save the model', m: '10 min', g: 'A file the scoring step can load later.',
+          d: [{ l: 'python', code: String.raw`import joblib
+joblib.dump({'model': final, 'threshold': best_t, 'features': list(X.columns)}, 'models/churn_model.joblib')` }],
+          k: '§models/churn_model.joblib§ exists and loads with §joblib.load§.' },
+        { gate: 'Gate 4 · Model building', items: ['Comparison table saved and the baseline beaten', 'Threshold justified by a written cost assumption', 'Test set used once', 'Model file saved', 'Commit made'] }
+      ] },
+
+    { id: 'communicate', nav: 'Communicate', title: 'Phase 5: Communicate Results', when: 'Day 3 · 3 hours', day: 'Day 3 · 3 h',
+      intro: 'A model nobody understands or trusts changes nothing. Your job now is translation: from probabilities to a decision a marketing manager can make. Continue in §03_model.ipynb§, then write the report in §reports/churn_report.md§.',
+      items: [
+        { id: '5.1', t: 'Explain what drives churn', m: '30 min', g: 'The top reasons the model flags customers, in business words.',
+          d: ['Compute permutation importance on the test set. It works on the whole pipeline and uses your original column names.', { l: 'python', code: String.raw`from sklearn.inspection import permutation_importance
+r = permutation_importance(final, X_test, y_test, scoring='average_precision', n_repeats=10, random_state=42, n_jobs=-1)
+imp = pd.Series(r.importances_mean, index=X_test.columns).sort_values(ascending=False)
+imp.head(10)` }],
+          k: 'For each of the top 5 features, you wrote which direction it pushes risk (confirmed with your Day 2 charts) and whether that makes business sense.',
+          w: ['Treating importance as cause. It says what the model uses, not what you should change.'],
+          h: 'Once the main report is done, try SHAP on a few customers to explain individual predictions.' },
+        { id: '5.2', t: 'Build the at-risk list and segments', m: '40 min', g: 'A ranked list of customers, grouped so different groups get different actions.',
+          d: [{ l: 'python', code: String.raw`scored = X_test.copy()
+scored['CustomerID'] = ids.loc[X_test.index].values
+scored['churn_prob'] = p_test
+scored['at_risk'] = scored['churn_prob'] >= best_t
+scored['value_tier'] = pd.qcut(scored['monetary'], 3, labels=['low', 'mid', 'high'])  # past spend as the value measure
+print(scored[scored['at_risk']].groupby('value_tier', observed=True).size())` }],
+          k: 'You can describe each segment in a sentence, for example “high spend, not seen in 100 days, many returns”.',
+          w: ['Segments too small to act on. Merge them.'] },
+        { id: '5.3', t: 'Recommend actions', m: '30 min', g: 'One concrete action per segment, with a reason tied to your findings.',
+          d: ['Fill this table in the report: segment, size, main risk driver, action (win-back offer, onboarding fix, loyalty perk, or no action), assumed cost, expected effect.'],
+          k: 'Every action points back to an insight number from Step 3.5.',
+          w: ['Recommending the same discount to everyone. The point of the model is to treat segments differently.'] },
+        { id: '5.4', t: 'Estimate the impact', m: '25 min', g: 'A defensible, assumption-labeled estimate of value.',
+          d: [{ l: 'python', code: String.raw`y_arr = y_test.to_numpy()
+tp = ((pred == 1) & (y_arr == 1)).sum()
+fp = ((pred == 1) & (y_arr == 0)).sum()
+net = tp * V * save_rate - (tp + fp) * C
+print(tp, fp, net)` }],
+          k: 'The three assumptions (V, C, save rate) are written in the report as assumptions, with a low and high case.',
+          w: ['Presenting the number as a forecast. It is a scenario built on stated assumptions.'] },
+        { id: '5.5', t: 'Design the test that proves it', m: '20 min', g: 'A plan to verify the model’s value in real life.',
+          d: ['Write: flag customers each month, randomly hold out some flagged customers as a control group, apply the action to the rest, measure the retention difference after a set period, and decide the sample size and duration before starting.'],
+          k: 'The plan names the metric, the control group and the decision rule.' },
+        { id: '5.6', t: 'State the limits', m: '15 min', g: 'An honest account of what the model cannot do.',
+          d: ['List what the model cannot know (data period, missing signals), a fairness check across groups you can compare (for example senior citizens versus others), and when to retrain.'],
+          k: 'Each limit says what a reader should do differently because of it.' },
+        { id: '5.7', t: 'Write the report', m: '60 min', g: '3 to 5 pages a busy manager can read in 10 minutes.',
+          d: ['Use these headings: Decision and question, Data and cleaning in brief, What drives churn, How well the model works (in plain language, with the baseline for comparison), Who to act on and how, Estimated impact and assumptions, Risks and limits, Next steps.'],
+          k: 'Reading only the first sentence of each section tells the story. You also compared the result with your Day 1 criteria and said plainly whether you met them.',
+          w: ['Opening with the algorithm. Managers want the decision and the result first.'] },
+        { gate: 'Gate 5 · Communicate results', items: ['Report answers the Day 1 question', 'Every impact number has labeled assumptions', 'Limits are stated', 'Repo committed'] }
+      ] },
+
+    { id: 'operationalize', nav: 'Operationalize', title: 'Phase 6: Operationalize (stretch)', when: 'Day 3 · last 2 hours', day: 'Day 3 · 2 h stretch',
+      intro: 'Operationalizing means someone can use the model next month without you rerunning notebooks. If time is short, do Steps 6.1 and 6.3 and skip the app.',
+      items: [
+        { id: '6.1', t: 'Write a scoring script', m: '45 min', g: 'A command that turns a table of customers into a ranked risk list.',
+          d: ['Create §src/score.py§.', { l: 'python · src/score.py', code: String.raw`import sys
+import joblib
+import pandas as pd
+
+def score(in_path, out_path):
+    bundle = joblib.load('models/churn_model.joblib')
+    new = pd.read_csv(in_path, dtype={'CustomerID': 'string'})
+    X = new[bundle['features']]
+    new['churn_prob'] = bundle['model'].predict_proba(X)[:, 1]
+    new['at_risk'] = new['churn_prob'] >= bundle['threshold']
+    new.sort_values('churn_prob', ascending=False).to_csv(out_path, index=False)
+
+if __name__ == '__main__':
+    score(sys.argv[1], sys.argv[2])` }],
+          k: 'Run §python src/score.py data/clean/model_table.csv reports/scored.csv§ and confirm the file is sorted from highest to lowest risk.',
+          w: ['In real use the input is new raw transactions, not a finished table. Move your cleaning and feature code from the notebooks into §src/features.py§ as a function such as §build_features(tx, cutoff)§, and call it before scoring. Training and scoring must use the same code.'] },
+        { id: '6.2', t: 'Optional: a small app', m: '45 min', g: 'A simple interface over the scoring script.',
+          d: ['Install Streamlit (§pip install streamlit§) and build §src/app.py§ with an upload box that calls §score§ and shows the top 20 at-risk customers.'],
+          k: 'The app starts with §streamlit run src/app.py§ and shows a table after you upload a file.',
+          w: ['Spending the whole block on layout. The learning is in the scoring path, not the interface.'] },
+        { id: '6.3', t: 'Write the pilot and monitoring notes', m: '30 min', g: 'Anyone can run and watch the model without you.',
+          d: ['Add to the README: how to run scoring monthly, the A/B test plan from Step 5.5, what to monitor (share of customers flagged, recall on the control group, drift in key features), and a retraining trigger (for example, recall falls below your Day 1 minimum, or every quarter).'],
+          k: 'A teammate could run the scoring step from the README alone.' },
+        { gate: 'Gate 6 · Operationalize (stretch)', items: ['Scoring script works end to end', 'README explains how to run and monitor it', 'Final commit pushed'] }
+      ] },
+
+    { id: 'wrap', nav: 'Wrap-up', title: 'Learning log and the hands-off ramp', when: 'After Day 3', day: 'After Day 3', wrap: true,
+      intro: 'The log tells you where to remove the training wheels next time.', items: [] }
+  ];
+
+  var RATINGS = ['Profiling a raw file and spotting hidden problems', 'Choosing a missing-value strategy and justifying it', 'Building a leakage-safe target and split', 'Writing a preprocessing pipeline from memory', 'Choosing metrics for an imbalanced problem', 'Picking a threshold from a cost assumption', 'Explaining a model to a non-technical reader'];
+  var RAMP = [
+    ['Discovery', 'Templates for question, target, criteria', 'You write the problem statement and criteria from a blank page'],
+    ['Scrub', 'Step-by-step code and a log format', 'You get the checklist headings only; you write all code and the log yourself'],
+    ['Explore and plan', 'Prompts and example charts', 'You list your own questions first, then check them against a short checklist'],
+    ['Model', 'Full pipeline code', 'You get a one-line spec (split, baseline, 3 candidates, CV, metric) and build it'],
+    ['Communicate', 'Report outline and impact formula', 'You get only the audience and decision; you design the report'],
+    ['Operationalize', 'Script skeleton', 'You decide what deployment is needed and build it']
+  ];
+
+  var KEY = 'guided-execution-playbook-v1';
+  var state = { done: {}, open: {}, phase: 'setup' };
+  try { var raw = localStorage.getItem(KEY); if (raw) { var p = JSON.parse(raw); if (p && typeof p === 'object') { state.done = p.done || {}; state.open = p.open || {}; state.phase = p.phase || 'setup'; } } } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fmt(s) { return esc(s).replace(/§(.+?)§/g, '<code>$1</code>'); }
+  var TICK = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function gateId(ph, gi, i) { return 'g:' + ph.id + ':' + gi + ':' + i; }
+  function phaseUnits(ph) {
+    var ids = [];
+    ph.items.forEach(function (it, idx) {
+      if (it.gate) it.items.forEach(function (_, i) { ids.push(gateId(ph, idx, i)); });
+      else if (it.id) ids.push(it.id);
+    });
+    return ids;
+  }
+  function phaseCount(ph) { var u = phaseUnits(ph); var d = u.filter(function (x) { return state.done[x]; }).length; return { done: d, total: u.length }; }
+  function firstUndone(ph) { for (var i = 0; i < ph.items.length; i++) { var it = ph.items[i]; if (it.id && !state.done[it.id]) return it.id; } return null; }
+
+  function codeBlock(x) {
+    return '<figure class="code"><figcaption><span>' + esc(x.l || 'python') + '</span><button type="button" class="copy">Copy</button></figcaption><pre><code>' + esc(x.code) + '</code></pre></figure>';
+  }
+  function renderDo(list) {
+    var out = '', buf = [];
+    function flush() { if (buf.length) { out += '<ul>' + buf.map(function (t) { return '<li>' + fmt(t) + '</li>'; }).join('') + '</ul>'; buf = []; } }
+    list.forEach(function (x) { if (typeof x === 'string') buf.push(x); else { flush(); out += codeBlock(x); } });
+    flush(); return out;
+  }
+  function renderStep(ph, st, current) {
+    var done = !!state.done[st.id];
+    var open = state.open[st.id] !== undefined ? state.open[st.id] : (st.id === current);
+    var body = '<div class="sbody"' + (open ? '' : ' hidden') + ' id="b-' + st.id + '">' +
+      '<div class="row"><span class="lab">Goal</span><p>' + fmt(st.g) + '</p></div>' +
+      '<div class="row"><span class="lab">Do</span>' + renderDo(st.d) + '</div>' +
+      '<div class="row"><span class="lab">Check</span><p>' + fmt(st.k) + '</p></div>' +
+      (st.w ? '<div class="row watch"><span class="lab">Watch out</span><ul>' + st.w.map(function (t) { return '<li>' + fmt(t) + '</li>'; }).join('') + '</ul></div>' : '') +
+      (st.h ? '<details class="stuck"><summary>Stuck?</summary><p>' + fmt(st.h) + '</p></details>' : '') +
+      '</div>';
+    return '<article class="step' + (done ? ' done' : '') + (st.id === current ? ' current' : '') + '" data-id="' + st.id + '">' +
+      '<div class="shead"><label class="tick"><input type="checkbox" data-step="' + st.id + '"' + (done ? ' checked' : '') + ' aria-label="Mark step ' + st.id + ' done"><span class="box">' + TICK + '</span></label>' +
+      '<button type="button" class="stephead" data-toggle="' + st.id + '" aria-expanded="' + open + '" aria-controls="b-' + st.id + '"><span class="num">' + st.id + '</span><span class="ttl">' + esc(st.t) + '</span><span class="time">' + esc(st.m) + '</span></button></div>' + body + '</article>';
+  }
+  function renderGate(ph, gi, g) {
+    return '<section class="gate"><h3>' + esc(g.gate) + ' · tick before moving on</h3>' + g.items.map(function (t, i) {
+      var id = gateId(ph, gi, i);
+      return '<label><input type="checkbox" data-gate="' + id + '"' + (state.done[id] ? ' checked' : '') + '><span>' + fmt(t) + '</span></label>';
+    }).join('') + '</section>';
+  }
+  function renderWrap() {
+    return '<div class="card"><h3>End each day with three lines</h3><p>In <code>reports/learning_log.md</code>: what surprised you, what took longest and why, and one thing you would do differently.</p></div>' +
+      '<div class="card"><h3>After Day 3, rate yourself</h3><p>Tick each skill you could do without the hint. Unticked skills become the focus of the next practice.</p>' +
+      RATINGS.map(function (t, i) { var id = 'r:' + i; return '<label><input type="checkbox" data-gate="' + id + '"' + (state.done[id] ? ' checked' : '') + '><span>' + esc(t) + '</span></label>'; }).join('') + '</div>' +
+      '<div class="card"><h3>How the next practice becomes hands-off</h3><p>Keep the same phases and gates, and remove one layer of support at a time.</p></div>' +
+      '<div class="tblwrap"><table><thead><tr><th>Phase</th><th>This practice (guided)</th><th>Next practice (hands-off)</th></tr></thead><tbody>' +
+      RAMP.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<div class="card"><p>For the next run, pick a different domain and a messier dataset, set a timebox in advance, and ask for a review of your gate checklists instead of step-by-step help.</p></div>';
+  }
+
+  var rail = document.getElementById('rail'), main = document.getElementById('main');
+
+  function totals() {
+    var t = 0, d = 0;
+    PHASES.forEach(function (ph) { var c = phaseCount(ph); t += c.total; d += c.done; });
+    return { t: t, d: d };
+  }
+  function renderRail() {
+    rail.innerHTML = PHASES.map(function (ph) {
+      var c = phaseCount(ph), pct = c.total ? Math.round(100 * c.done / c.total) : 0;
+      var meta = ph.wrap ? ph.day : ph.day + ' · ' + c.done + '/' + c.total;
+      return '<button type="button" class="navitem' + (c.total && c.done === c.total ? ' complete' : '') + '" data-phase="' + ph.id + '"' + (ph.id === state.phase ? ' aria-current="page"' : '') + '><span class="nname">' + esc(ph.nav) + '</span><span class="nmeta">' + esc(meta) + '</span>' + (ph.wrap ? '' : '<span class="nbar"><i style="width:' + pct + '%"></i></span>') + '</button>';
+    }).join('');
+  }
+  function renderProgress() {
+    var t = totals(), pct = t.t ? Math.round(100 * t.d / t.t) : 0;
+    document.getElementById('pfill').style.width = pct + '%';
+    document.getElementById('pbar').setAttribute('aria-valuenow', pct);
+    document.getElementById('pcount').textContent = t.d + ' of ' + t.t + ' done';
+  }
+  function renderMain() {
+    var idx = PHASES.findIndex(function (p) { return p.id === state.phase; }); if (idx < 0) { idx = 0; state.phase = PHASES[0].id; }
+    var ph = PHASES[idx], cur = firstUndone(ph);
+    var html = '<div class="phead"><span class="when">' + esc(ph.when) + '</span><h2>' + esc(ph.title) + '</h2><p>' + fmt(ph.intro) + '</p></div>';
+    if (ph.wrap) html += renderWrap();
+    else ph.items.forEach(function (it, i) {
+      if (it.gate) html += renderGate(ph, i, it);
+      else if (it.note) html += '<div class="note">' + esc(it.note) + '</div>';
+      else html += renderStep(ph, it, cur);
+    });
+    var prev = PHASES[idx - 1], next = PHASES[idx + 1];
+    html += '<div class="pager">' + (prev ? '<button type="button" data-phase="' + prev.id + '">← ' + esc(prev.nav) + '</button>' : '<span></span>') + (next ? '<button type="button" class="primary" data-phase="' + next.id + '">' + esc(next.nav) + ' →</button>' : '') + '</div>';
+    main.innerHTML = html;
+  }
+  function renderAll() { renderRail(); renderProgress(); renderMain(); }
+
+  function go(id, scrollTop) {
+    state.phase = id; save(); renderAll();
+    if (scrollTop) { var el = document.querySelector('.hero'); if (el) el.scrollIntoView({ block: 'start' }); window.scrollTo(0, Math.min(window.scrollY, 160)); }
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    var navb = t.closest && t.closest('[data-phase]');
+    if (navb) { go(navb.getAttribute('data-phase'), true); window.scrollTo({ top: 0 }); return; }
+    var tg = t.closest && t.closest('[data-toggle]');
+    if (tg) {
+      var id = tg.getAttribute('data-toggle'), b = document.getElementById('b-' + id), open = b.hidden;
+      b.hidden = !open; tg.setAttribute('aria-expanded', open); state.open[id] = open; save(); return;
+    }
+    var cp = t.closest && t.closest('.copy');
+    if (cp) {
+      var code = cp.closest('.code').querySelector('code'), text = code.textContent;
+      var fallback = function () { var r = document.createRange(); r.selectNodeContents(code); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); cp.textContent = 'Selected, press copy'; setTimeout(function () { cp.textContent = 'Copy'; }, 2000); };
+      try { navigator.clipboard.writeText(text).then(function () { cp.textContent = 'Copied'; setTimeout(function () { cp.textContent = 'Copy'; }, 1600); }, fallback); } catch (err) { fallback(); }
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.matches && t.matches('[data-step]')) {
+      var id = t.getAttribute('data-step'); state.done[id] = t.checked; if (t.checked) state.open[id] = false; else delete state.open[id];
+      save();
+      var ph = PHASES.find(function (p) { return p.id === state.phase; });
+      var nxt = t.checked ? firstUndone(ph) : null;
+      if (nxt) delete state.open[nxt];
+      renderAll();
+      if (nxt) { var el = document.querySelector('[data-id="' + nxt + '"]'); if (el) el.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+    } else if (t.matches && t.matches('[data-gate]')) {
+      state.done[t.getAttribute('data-gate')] = t.checked; save(); renderRail(); renderProgress();
+    }
+  });
+
+  var resetBtn = document.getElementById('reset'), resetTimer = null;
+  resetBtn.addEventListener('click', function () {
+    if (resetBtn.getAttribute('data-armed') === '1') {
+      state = { done: {}, open: {}, phase: 'setup' }; save(); resetBtn.removeAttribute('data-armed'); resetBtn.textContent = 'Reset progress'; clearTimeout(resetTimer); renderAll(); window.scrollTo({ top: 0 });
+    } else {
+      resetBtn.setAttribute('data-armed', '1'); resetBtn.textContent = 'Click again to clear all ticks';
+      resetTimer = setTimeout(function () { resetBtn.removeAttribute('data-armed'); resetBtn.textContent = 'Reset progress'; }, 4000);
+    }
+  });
+
+  renderAll();
+})();
+</script>
+
+</body></html>
